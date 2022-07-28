@@ -2,7 +2,7 @@
 
 ## Commands
 
-### basic commands
+### Basic commands
 - ip default-g 1.1.10.254 	: ip default-gateway
 - vlan 10			: setup vlan
 - name VLAN_10			: name vlan
@@ -22,8 +22,100 @@
 - Setting up ip routing
   - ip route (destination network ip) (broadcast) (next interface) (next ip)
   - ip route 100.30.0.0 255.255.255.0 s1/0 204.200.7.2
+- ping 1.1.4.4 source 1.1.1.1
 
-### initial setup
+#### Frame relay
+enable
+conf t
+no ip domain lookup
+int s1/0
+  no sh
+  enc frame
+  no fram inver
+  clock rate 64000
+  exit
+line c 0
+  logg sy
+  exec-timeout 0
+  exit
+line vty 0 4
+  pass cisco
+  exit
+hostname 
+---------------------------------------------------------------
+R1)
+conf t
+int lo 0
+  ip add 1.1.1.1 255.255.255.0
+  exit
+int s1/0
+  ip add 1.1.12.1 255.255.255.0
+  fram map ip 1.1.12.2 102 br
+  exit
+ip route 1.1.2.0 255.255.255.0 s1/0 1.1.12.2
+ip route 1.1.3.0 255.255.255.0 s1/0 1.1.12.2
+ip route 1.1.4.0 255.255.255.0 s1/0 1.1.12.2
+ip route 1.1.23.0 255.255.255.0 s1/0 1.1.12.2
+ip route 1.1.34.0 255.255.255.0 s1/0 1.1.12.2
+do wr
+
+R2)
+conf t
+int lo 0
+  ip add 1.1.2.2 255.255.255.0
+  exit
+int s1/0.12 m
+  ip add 1.1.12.2 255.255.255.0
+  fram map ip 1.1.12.1 201 br
+  exit
+int s1/0.23 m
+  ip add 1.1.23.2 255.255.255.0
+  fram map ip 1.1.23.3 203 br
+  exit
+ip route 1.1.1.0 255.255.255.0 s1/0.12 1.1.12.1
+ip route 1.1.3.0 255.255.255.0 s1/0.23 1.1.23.3
+ip route 1.1.4.0 255.255.255.0 s1/0.23 1.1.23.3
+ip route 1.1.34.0 255.255.255.0 s1/0.23 1.1.23.3
+do wr
+
+R3)
+conf t
+int lo0
+  ip add 1.1.3.3 255.255.255.0
+  exit
+int s1/0.23 m
+  ip add 1.1.23.3 255.255.255.0
+  fram map ip 1.1.23.2 302 br
+  exit
+int s1/0.34 p
+  ip add 1.1.34.3 255.255.255.0
+  fram interface 304
+  exit
+ip route 1.1.1.0 255.255.255.0 s1/0.23 1.1.23.2
+ip route 1.1.2.0 255.255.255.0 s1/0.23 1.1.23.2
+ip route 1.1.12.0 255.255.255.0 s1/0.23 1.1.23.2
+ip route 1.1.4.0 255.255.255.0 s1/0.34 1.1.34.4
+exit
+wr
+
+R4)
+conf t
+int lo0
+  ip add 1.1.4.4 255.255.255.0
+  exit
+int s1/0.34 p
+  ip add 1.1.34.4 255.255.255.0
+  fram interface-dlci 403
+  exit
+ip route 1.1.1.0 255.255.255.0 s1/0.34 1.1.34.3
+ip route 1.1.2.0 255.255.255.0 s1/0.34 1.1.34.3
+ip route 1.1.3.0 255.255.255.0 s1/0.34 1.1.34.3
+ip route 1.1.12.0 255.255.255.0 s1/0.34 1.1.34.3
+ip route 1.1.23.0 255.255.255.0 s1/0.34 1.1.34.3
+exit
+wr
+
+### Initial setup
 en
 conf t
 no ip domain look
@@ -38,7 +130,7 @@ exit
 hostname
 no ip routing
 
-### debugging
+### Debugging
 - sh ip int br
 - sh fram map
 - sh run int s1/0
@@ -49,3 +141,4 @@ no ip routing
 - sh int trunk		: show interface trunk
 - sh cdp n		: sh cdp (cisco discovery protocol) neighbor
 - sh ip route		: show ip route
+- sh controller s1/0	: check sex of interface ports
