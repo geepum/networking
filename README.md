@@ -115,6 +115,16 @@ ip route 1.1.23.0 255.255.255.0 s1/0.34 1.1.34.3
 exit
 wr
 
+------------------------------------------------
+
+R1) ip route 1.1.0.0 255.255.192.0 s1/0 1.1.12.2
+R2) ip route 1.1.0.0 255.255.192.0 s1/0.23 1.1.23.3
+    ip route 1.1.1.0 255.255.255.0 s1/0.12 1.1.12.1
+R3) ip route 1.1.4.0 255.255.255.0 s1/0.34 1.1.34.4
+    ip route 1.1.0.0 255.255.224.0 s1/0.23 1.1.23.2
+R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
+(better) ip route 1.1.0.0 255.255.192.0 s1/0.34 1.1.34.3
+
 ### Initial setup
 en
 conf t
@@ -142,3 +152,7 @@ no ip routing
 - sh cdp n		: sh cdp (cisco discovery protocol) neighbor
 - sh ip route		: show ip route
 - sh controller s1/0	: check sex of interface ports
+- (serial interface) cdp run => int s1/0 => cdp en
+- (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
+- deb ip pack 		: debugging on 
+- sh fram lmi 		: CCITT => q933a
