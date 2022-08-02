@@ -125,6 +125,23 @@ R3) ip route 1.1.4.0 255.255.255.0 s1/0.34 1.1.34.4
 R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 (better) ip route 1.1.0.0 255.255.192.0 s1/0.34 1.1.34.3
 
+### NAT_PT
+
+- no sh
+- ip add dhcp => internet facing interface
+- general ip routes
+- ip route 0.0.0.0 0.0.0.0 f0/1 10.0.0.1
+- ip route 0.0.0.0 0.0.0.0 s1/0.12 1.1.12.1
+- ip route 0.0.0.0 0.0.0.0 s1/0.23 1.1.23.2
+- ip route 0.0.0.0 0.0.0.0 s1/0.34 1.1.34.3
+- access-list 10 permit 1.1.1.0 0.0.0.255 => same thing until 1.1.4.0 0.0.0.255
+  - numbered cannot be removed, so it need to be re-written from the beginning
+  - however, named can be removed
+- ip nat inside source list 10 int f0/1 overload
+- int s1/0 => ip nat inside
+- int f0/1 => ip nat out
+- ping 10.0.0.1 source 1.1.4.4
+
 ### Initial setup
 en
 conf t
@@ -156,3 +173,6 @@ no ip routing
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
 - deb ip pack 		: debugging on 
 - sh fram lmi 		: CCITT => q933a
+- sh ip nat trans	: show ip nat info
+- sh run | begin nat	: show ip nat config
+
