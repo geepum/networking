@@ -12,17 +12,33 @@
 - sw a v 10			: switch access vlan 10	<=> no ..
 - sw t e d			: switch trunk encapsulation dot1q
 - sw m tr			: switch mode trunk
+
 - setting up vlan for routers
   1. int f0/0.10	<=> no ...
   2. en dot1q 10	<=> no ...
   3. ip add 1.1.10.254 255.255.255.0	<=> no ...
+
 - Native VLAN
   - SW : sw tr native vlan 10	<=> no ...
   - R  : encap d 10 native 	<=> no ...
+
 - Setting up ip routing
-  - ip route (destination network ip) (broadcast) (next interface) (next ip)
+  - ip route (destination network ip) (broadcast) (out interface) (next ip)
   - ip route 100.30.0.0 255.255.255.0 s1/0 204.200.7.2
+
 - ping 1.1.4.4 source 1.1.1.1
+
+- pap
+  - R1(config)# username R2 pass cisco => int s1/0 => en ppp => ppp pap sent R1 pass cisco => pp authen pap => clock rate 64000
+  - R2(config)# username R1 pass cisco => int s1/0 => en ppp => ppp authen pap => ppp pap sent R2 pass cisco => clock rate 64000
+
+- chap
+  - R1(config)# username R2 pass cisco => int s1/0 => en ppp => ppp authen chap => ip add 1.1.10.1 255.255.255.0 => no sh
+
+- L3 SW SVI
+  - If set as `no ip routing`, change to `ip routing`
+  - vlan 30 => vlan 40 => int f2/3 => sw m a => sw a v 30 => int f2/4 => sw m a => sw a v 40 => int vlan 30 => ip add 1.1.30.254 255.255.255.0 => int vlan 40 => ip add 1.1.40.254 255.255.255.0
+
 
 #### Frame relay
 enable
@@ -162,7 +178,7 @@ no ip routing
 - sh fram map
 - sh run int s1/0
 - debug arp 		: ARP packet debug on <=> no ...
-- sh arp
+- sh arp		: show mac address table
 - sh fram map
 - sh vlan-s		: show vlan-switch
 - sh int trunk		: show interface trunk
