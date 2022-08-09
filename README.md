@@ -3,6 +3,7 @@
 ## Commands
 
 ### Basic commands
+- `ip add 5.5.0.1 255.255.255.0 secondary`
 - ip default-g 1.1.10.254 	: ip default-gateway
 - vlan 10			: setup vlan
 - name VLAN_10			: name vlan
@@ -156,6 +157,12 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - `int f0/1` => `ip nat out`
 - `ping 10.0.0.1 source 1.1.4.4`
 
+### domain
+- if `no ip domain look` => change it to `ip domain look`
+  - but if asked with unknown IPs/addresses, it will loop
+- `ip name-server 8.8.8.8`
+- `ping www.google.com`
+
 ### Initial setup
 en
 conf t
@@ -170,6 +177,13 @@ login
 exit
 hostname
 no ip routing
+
+### RIP
+- `router` => shows protocols
+- `router rip` => `network 1.1.1.0` => `network 1.1.12.0`
+- `passive-interface loopback 0` => do not talk to lo0 any more
+  - needs to put passive on the interfaces that are not routers
+- `int s1/0.23` => `ip rip send version 2` => `router rip` => `no auto-summary`
 
 ### Debugging
 - sh ip int br
@@ -189,4 +203,7 @@ no ip routing
 - sh fram lmi 		: CCITT => q933a
 - sh ip nat trans	: show ip nat info
 - sh run | begin nat	: show ip nat config
-- # debug ppp (options)	: debug on for ppp
+- debug ppp (options)	: debug on for ppp
+- debug ip rip		: uses broadcast
+- un all		: undebug all
+- sh ip protocol	: shows the protocol information
