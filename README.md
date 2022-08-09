@@ -13,32 +13,31 @@
 - sw t e d			: switch trunk encapsulation dot1q
 - sw m tr			: switch mode trunk
 
-- setting up vlan for routers
+### setting up vlan for routers
   1. int f0/0.10	<=> no ...
   2. en dot1q 10	<=> no ...
   3. ip add 1.1.10.254 255.255.255.0	<=> no ...
 
-- Native VLAN
+### Native VLAN
   - SW : sw tr native vlan 10	<=> no ...
   - R  : encap d 10 native 	<=> no ...
 
-- Setting up ip routing
+### Setting up ip routing
   - ip route (destination network ip) (broadcast) (out interface) (next ip)
   - ip route 100.30.0.0 255.255.255.0 s1/0 204.200.7.2
 
 - ping 1.1.4.4 source 1.1.1.1
 
-- pap
+### pap
   - R1(config)# username R2 pass cisco => int s1/0 => en ppp => ppp pap sent R1 pass cisco => pp authen pap => clock rate 64000
   - R2(config)# username R1 pass cisco => int s1/0 => en ppp => ppp authen pap => ppp pap sent R2 pass cisco => clock rate 64000
 
-- chap
+### chap
   - R1(config)# username R2 pass cisco => int s1/0 => en ppp => ppp authen chap => ip add 1.1.10.1 255.255.255.0 => no sh
 
-- L3 SW SVI
+### L3 SW SVI
   - If set as `no ip routing`, change to `ip routing`
   - vlan 30 => vlan 40 => int f2/3 => sw m a => sw a v 30 => int f2/4 => sw m a => sw a v 40 => int vlan 30 => ip add 1.1.30.254 255.255.255.0 => int vlan 40 => ip add 1.1.40.254 255.255.255.0
-
 
 #### Frame relay
 enable
@@ -142,21 +141,20 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 (better) ip route 1.1.0.0 255.255.192.0 s1/0.34 1.1.34.3
 
 ### NAT_PT
-
-- no sh
-- ip add dhcp => internet facing interface
+- `no sh`
+- `ip add dhcp` => internet facing interface
 - general ip routes
-- ip route 0.0.0.0 0.0.0.0 f0/1 10.0.0.1
-- ip route 0.0.0.0 0.0.0.0 s1/0.12 1.1.12.1
-- ip route 0.0.0.0 0.0.0.0 s1/0.23 1.1.23.2
-- ip route 0.0.0.0 0.0.0.0 s1/0.34 1.1.34.3
-- access-list 10 permit 1.1.1.0 0.0.0.255 => same thing until 1.1.4.0 0.0.0.255
+- `ip route 0.0.0.0 0.0.0.0 f0/1 10.0.0.1`
+- `ip route 0.0.0.0 0.0.0.0 s1/0.12 1.1.12.1`
+- `ip route 0.0.0.0 0.0.0.0 s1/0.23 1.1.23.2`
+- `ip route 0.0.0.0 0.0.0.0 s1/0.34 1.1.34.3`
+- `access-list 10 permit 1.1.1.0 0.0.0.255` => same thing until 1.1.4.0 0.0.0.255
   - numbered cannot be removed, so it need to be re-written from the beginning
   - however, named can be removed
-- ip nat inside source list 10 int f0/1 overload
-- int s1/0 => ip nat inside
-- int f0/1 => ip nat out
-- ping 10.0.0.1 source 1.1.4.4
+- `ip nat inside source list 10 int f0/1 overload`
+- `int s1/0` => `ip nat inside`
+- `int f0/1` => `ip nat out`
+- `ping 10.0.0.1 source 1.1.4.4`
 
 ### Initial setup
 en
@@ -191,4 +189,4 @@ no ip routing
 - sh fram lmi 		: CCITT => q933a
 - sh ip nat trans	: show ip nat info
 - sh run | begin nat	: show ip nat config
-
+- # debug ppp (options)	: debug on for ppp
