@@ -141,6 +141,15 @@ R3) ip route 1.1.4.0 255.255.255.0 s1/0.34 1.1.34.4
 R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 (better) ip route 1.1.0.0 255.255.192.0 s1/0.34 1.1.34.3
 
+#### multi-point frame-relay
+- R1) `conf t` => `int lo0` => `ip add 10.10.1.1 255.255.255.0` => `exit` => `int s1/0` => `ip add 10.10.123.1 255.255.255.0` => `fram map ip 10.10.123.2 102 b` => `fram map ip 10.10.123.3 102 b`
+- R2) `conf t` => `int lo0` => `ip add 10.10.2.2 255.255.255.0` => `exit` => `int s1/0.123 m` => `ip add 10.10.123.2 255.255.255.0` => `fram map ip 10.10.123.1 201 b` => fram map ip 10.10.123.3 203 b`
+- R3) `conf t` => `int lo0` => `ip add 10.10.3.3 255.255.255.0` => `exit` => int s1/0.123 m` => `ip add 10.10.123.3 255.255.255.0` => `fram map ip 10.10.123.2 302 b` => `fram map ip 10.10.123.1 302 b` => `int s1/0.34 p` => `ip add 150.1.34.1 255.255.255.0` => `fram inter 304`
+- R4) `conf t` => `int lo0` => `ip add 150.1.4.4 255.255.255.0` => `exit` => `int s1/0.34 p` => `ip add 150.1.34.254 255.255.255.0` => `fram inter 403`
+
+### rip w/ split-horizon
+
+
 ### NAT_PT
 - `no sh`
 - `ip add dhcp` => internet facing interface
@@ -207,3 +216,5 @@ no ip routing
 - debug ip rip		: uses broadcast
 - un all		: undebug all
 - sh ip protocol	: shows the protocol information
+- sh clock
+- 
