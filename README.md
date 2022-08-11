@@ -41,24 +41,6 @@
   - vlan 30 => vlan 40 => int f2/3 => sw m a => sw a v 30 => int f2/4 => sw m a => sw a v 40 => int vlan 30 => ip add 1.1.30.254 255.255.255.0 => int vlan 40 => ip add 1.1.40.254 255.255.255.0
 
 #### Frame relay
-enable
-conf t
-no ip domain lookup
-int s1/0
-  no sh
-  enc frame
-  no fram inver
-  clock rate 64000
-  exit
-line c 0
-  logg sy
-  exec-timeout 0
-  exit
-line vty 0 4
-  pass cisco
-  exit
-hostname 
----------------------------------------------------------------
 R1)
 conf t
 int lo 0
@@ -147,7 +129,11 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - R3) `conf t` => `int lo0` => `ip add 10.10.3.3 255.255.255.0` => `exit` => int s1/0.123 m` => `ip add 10.10.123.3 255.255.255.0` => `fram map ip 10.10.123.2 302 b` => `fram map ip 10.10.123.1 302 b` => `int s1/0.34 p` => `ip add 150.1.34.1 255.255.255.0` => `fram inter 304`
 - R4) `conf t` => `int lo0` => `ip add 150.1.4.4 255.255.255.0` => `exit` => `int s1/0.34 p` => `ip add 150.1.34.254 255.255.255.0` => `fram inter 403`
 
-### rip w/ split-horizon
+### dhcp relay
+- SW1
+  - `vlan 10` => `int range f1/1 - 2` => `no sh` => `sw m a` => `sw a v 10` => `exit`
+  - `int vlan 10` => `ip add 1.1.10.154 255.255.255.0` => `exit`
+  
 
 
 ### NAT_PT
