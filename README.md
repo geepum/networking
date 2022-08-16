@@ -2,9 +2,13 @@
 
 ## Commands
 
-### Basic commands
+### ip add
 - `ip add 5.5.0.1 255.255.255.0 secondary`
+
+### default gateway IP
 - ip default-g 1.1.10.254 	: ip default-gateway
+
+### VLAN
 - vlan 10			: setup vlan
 - name VLAN_10			: name vlan
 - int range f1/1 , f1/15	: interface with non consecutive port nums
@@ -40,7 +44,7 @@
   - If set as `no ip routing`, change to `ip routing`
   - vlan 30 => vlan 40 => int f2/3 => sw m a => sw a v 30 => int f2/4 => sw m a => sw a v 40 => int vlan 30 => ip add 1.1.30.254 255.255.255.0 => int vlan 40 => ip add 1.1.40.254 255.255.255.0
 
-#### Frame relay
+### Frame relay
 R1)
 conf t
 int lo 0
@@ -123,18 +127,63 @@ R3) ip route 1.1.4.0 255.255.255.0 s1/0.34 1.1.34.4
 R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 (better) ip route 1.1.0.0 255.255.192.0 s1/0.34 1.1.34.3
 
-#### multi-point frame-relay
+### multi-point frame-relay
 - R1) `conf t` => `int lo0` => `ip add 10.10.1.1 255.255.255.0` => `exit` => `int s1/0` => `ip add 10.10.123.1 255.255.255.0` => `fram map ip 10.10.123.2 102 b` => `fram map ip 10.10.123.3 102 b`
 - R2) `conf t` => `int lo0` => `ip add 10.10.2.2 255.255.255.0` => `exit` => `int s1/0.123 m` => `ip add 10.10.123.2 255.255.255.0` => `fram map ip 10.10.123.1 201 b` => fram map ip 10.10.123.3 203 b`
 - R3) `conf t` => `int lo0` => `ip add 10.10.3.3 255.255.255.0` => `exit` => int s1/0.123 m` => `ip add 10.10.123.3 255.255.255.0` => `fram map ip 10.10.123.2 302 b` => `fram map ip 10.10.123.1 302 b` => `int s1/0.34 p` => `ip add 150.1.34.1 255.255.255.0` => `fram inter 304`
 - R4) `conf t` => `int lo0` => `ip add 150.1.4.4 255.255.255.0` => `exit` => `int s1/0.34 p` => `ip add 150.1.34.254 255.255.255.0` => `fram inter 403`
 
-### dhcp relay
-- SW1
-  - `vlan 10` => `int range f1/1 - 2` => `no sh` => `sw m a` => `sw a v 10` => `exit`
-  - `int vlan 10` => `ip add 1.1.10.154 255.255.255.0` => `exit`
-  
+### route-map
+- basic config
+- fram map ip
+- next hop ping testing
+- ip routing
+- ping testing
+- router rip
+- route-map
+  - R3) `route-map STATIC` / automatically adds 10 at the end => `match ip address prefix NET1` => `set metric 3` => `route-m STATIC 20` => `match ip add pre NET2` => `set metric 2` => route-m CONNECTED` => `match interface s1/0.123 lo0` => `set metric 1` => `ip prefix-list NET1 permit 16.16.1.0/24` => `ip pre NET2 permit 16.16.2.0/24`
+- redistribute
+  - R3) `redistribute static route STATIC` => `redistribute connected route CONNECTED`
+- ping testing
 
+### dhcp relay
+- VLAN
+  - SW1) `vlan 10` => `int range f1/1 - 2` => `no sh` => `sw m a` => `sw a v 10` => `exit`
+  - SW1) `int vlan 10` => `ip add 1.1.10.154 255.255.255.0` => `exit`
+
+- L2 WAN - PPP and IP
+  - SW1) `int f0/0` => `no sh` => `ip add dhcp`
+  - SW1) `username R1 pass cisco` => `int s2/0` => `no sh` => `en ppp` => `ppp authen chap` => `clock rate 64000` => `ip add 1.1.12.5 255.255.255.252` => `exit`
+  - R1) `int f0/0` => `no sh` => `ip add 1.1.20.254 255.255.255.0` => `exit`
+  - R1) `username SW1 pass cisco` => `int s1/0` => `no sh` => `en ppp` => `ppp authen chap` => `ip add 1.1.12.6 255.255.255.252`
+
+- RIP
+  - SW1) `router rip` => `ver 2` => `network 1.0.0.0` => `no auto` => `passive default` => `no passive s2/0` => `int s2/0` => `ip split`
+  - SW1) `router rip` => `default-information originate` OR `redistribute static metric 1` but this is not used often and not recommended
+  - R1) `router rip` => `ver 2` => `network 1.0.0.0` => `no auto` => `passive f0/0` => `int f0/0` => `ip sp`
+
+
+- L3 routing protocol
+  - SW1) `ip route 0.0.0.0 0.0.0.0 f0/0 10.0.0.1`
+
+- DHCP
+  - SW1) `ip dhcp pool NET10` => `network 1.1.10.0 /24` => `default-router 1.1.10.254` => `dns-server 1.1.10.100 168.126.63.1` => `lease 7` => `exit`
+  - SW1) `ip dhcp pool NET20` => `network 1.1.20.0 /24` => `default-router 1.1.20.254` => `dns-server 1.1.10.100 168.126.63.1` => `l 7` => `exit`
+  - SW1) `ip dhcp pool NET10` => `class 10` => `address range 1.1.10.1 1.1.10.253`
+  - SW1) `ip dhcp pool NET20` => `class 20` => `address range 1.1.20.1 1.1.20.253`
+  - SW1) `int vlan 10` => `ip dhcp client class-id 10`
+  - SW1) `int s2/0` => ip dhcp client class-id 20`
+  - SW1) `ip dhcp excluded-address 1.1.10.100`
+  - R1) `int f0/0` => `ip helper-address 1.1.12.5`
+
+- NAT
+  - SW1) `access-list 1 permit 1.1.10.0 0.0.0.255`
+  - SW1) `access 1 permit 1.1.20.0 0.0.0.255`
+  - SW1) `access 1 permit 1.1.12.4 0.0.0.3` Only for ping test
+  - SW1) `ip nat inside source list 1 int f0/0 overload`
+  - SW1) `int vlan 10` => `ip nat inside`
+  - SW1) `int s2/0` => `ip nat inside`
+  - SW1) `int f0/0` => `ip nat outside`
 
 ### NAT_PT
 - `no sh`
@@ -173,12 +222,16 @@ exit
 hostname
 no ip routing
 
-### RIP
-- `router` => shows protocols
-- `router rip` => `network 1.1.1.0` => `network 1.1.12.0`
-- `passive-interface loopback 0` => do not talk to lo0 any more
-  - needs to put passive on the interfaces that are not routers
-- `int s1/0.23` => `ip rip send version 2` => `router rip` => `no auto-summary`
+### username / password
+- `username master password admin@$` => `line c 0` => `password cisco` => `login local`
+- `username user01 password router@$` => `line vty 0 4` => `login local` => `telnet (ip)`
+- `enable password router@$`
+- to encrypto all passwords so that it doesn't show on running-config
+  - `service password-encryption
+
+### banner / motd
+- `banner mord` or `motd banner` => `exit` out all the way to check the message of the day or banner
+
 
 ### Debugging
 - sh ip int br
@@ -203,4 +256,7 @@ no ip routing
 - un all		: undebug all
 - sh ip protocol	: shows the protocol information
 - sh clock
-- 
+- sh ip access		: shows permits and access list 
+- sh ip nat tr		: shows nat translation
+- sh ip prefix		
+- sh route-map 
