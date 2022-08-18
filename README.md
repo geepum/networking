@@ -232,11 +232,32 @@ no ip routing
 ### banner / motd
 - `banner mord` or `motd banner` => `exit` out all the way to check the message of the day or banner
 
+### stp
+- select root switch => select root port on other switches => select one port per one segment => other ports without any roles become alternate ports and be logically blocked
+- 3 switches w/ vlan 10 => check spanning-tree vlan 10 brief
+- block 20s => listen 15s => learn 15s => forward
+- if root or designated port, it becomes listening status immediately
+- between SWs
+  - `spanning uplink` => blocked link is unblocked immediately, which is 30s
+  - `spanning backbonefast` on all switches => max age is gone, which is 20s
+  - `int f1/1` => `spanning portfast` => looping may occur
+- `spanning-tree portfast` => saves 30s for ports for end devices
+- SW1) `sp vlan 10 priority 0`
+- SW2) `sp vlan 10 priority 4092`
+- SW3) `sp vlan 10 priority 8192` => makes the neighboring switch's port to be blocked
+- `sh sp vlan 10 br` => shows the spanning-tree information
+- SW4) `int f1/2` => `span vlan 10 cost 5` => makes the final cost to be lower
+
+### vtp
+- `vtp mode client`
+- `sh vtp status`
+- `vtp mode transparent`
 
 ### Debugging
 - sh ip int br
 - sh fram map
 - sh run int s1/0
+- sh int tr
 - debug arp 		: ARP packet debug on <=> no ...
 - sh arp		: show mac address table
 - sh fram map
@@ -259,4 +280,7 @@ no ip routing
 - sh ip access		: shows permits and access list 
 - sh ip nat tr		: shows nat translation
 - sh ip prefix		
-- sh route-map 
+- sh route-map
+- `sh spanning vlan 10 brief`
+- `deb sp event` => kill interface => watch event logs
+- `deb sp bpdu` 
