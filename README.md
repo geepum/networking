@@ -157,32 +157,61 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - SW4) `int f1/2` => `span vlan 10 cost 5` => makes the final cost to be lower
 
 ### vtp
-- `vtp mode client`
-- `sh vtp status`
-- `vtp mode transparent`
+- SW1) `vtp domain VTP22` => `vtp mode server
+- Sw2-4) `vtp mode client`
+- SW1) vlan setting => trunking mode
+- SW2-4) trunking setting => access mode for SW4
+- SW4) `spanning-tree portfast` on access mode ports => `span port fast bpduguard`
+- if vlan doesn't update, update any vlan then erase
+- SW1) `span vlan 10 root primary diameter 4` => I am root out of 4 switches => default is 7 switch based config, so in this case, the timings are shortened around aging, etc.
+- SW3) `span vlan 10 root second diameter 4` => becomes the number 2 for vlan 10
+- SW2) `span vlan 20 root secondary dimater 4` => becomes the number 2 for vlan 20
+- for new (but old) switches to be joined in an existing network, put this switch in transparent mode to make the revision information as 0
+- if you want to change from 'transparent' to 'server' mode, the port must be shut down before doing so. Or else, the server will learn clients' vlan info. Then, 
+  - SW1) `vtp m t` => revision becomes 0 => `int f1/1` => `sh` => `vtp m s` => increase revision num => if it's higher than clients' num => make vlan config => `no sh` on the interface
+
+### vtp + ripv2
+- SW1-4) vtp transparent mode
+- SW1-3) vlan setting => access mode
+- SW1-3) config ip address => next hop ping test
+- SW4) vlan setting => access mode
+- PC1-2) `ip default-gateway (gateway)` => must exist for end devices
+- SW1) router rip => passive int on lo0
+- SW2,3) router rip => `neighbor (ip address)` ip address of destination so that it doesn't go to end devices => to make it unicast. if not, it sends multicast due to switch in the middle
+
+### HSRP - hot standby routing protocol
+- SW3) `int vlan 234` => `standby 234 ip 1.1.234.100` => `st 234 priority 110` default value is 100 => `st 234 preempt delay minimum 30` how long to make the change effective since it cannot run before rip sends out new information => `st 234 track f1/3 20` subtract 20 to make it lower than 100. higher number is more prior number
+- SW2) `int vlan 234` => `st 234 ip 1.1.234.100` => `st 234 preempt`
+- SW2,3) `show standby` to check standby configs
+- PC1-2) `ip default-g 1.1.234.100` => ping to the vGW => `clear arp` => `clear mac` to erase cached info => `traceroute 1.1.100.100`
+
+### multiple hsrp
+- SW1-4) `vtp m t` => config vlan => `sp portf` for access ports => `sp portf bpduguard` on config mode
+- SW1-3) `int f1/1` => `no sw` to change L2 port to L3 port => config ip address
+- SW2,3) config int vlan 10,20 and ip address
+- SW1-3) next hop ping tests
+- SW1-3) config routing => include neighbor config for SW2,3
+- SW3) `int vlan 10` => `st 10 ip 1.1.10.100` => `st 10 pri 100` => `st 10 pre d m 30` => `st 10 tr f1/3 20` => `int vlan 20` => `st 20 ip 1.1.20.100` => `st 20 pre`
+- SW2) opposite config
+
+### vrrp
+- sw4) `vtp m s`
+- sw2,3) `vtp m c`
+- sw4) vlan setting => `sp portf` for reducing 30s forward delay => `sp portf b` for no bpdu on portfast interfaces => `int range f1/2 , f1/4` => trunking
+- sw2,3) trunking => check if vlan info has been received => if not, increase revision num for sw4
+- sw1-3) ip add for `sw m a` and `no sw` and svi => next hop test => `router rip` => include `nei (destination router ip add)` => `pass default` => `no pass vlan 10` and `20` and port to SW1
+- SW3) `track 1 int f1/3 line-protocol` => `int vl 10` => `vrrp 10 track 1 decrement 20 `=> `vrrp 10 pri 110` => `vrrp 10 pre d m 30` =>
 
 ### Debugging
+- (serial interface) cdp run => int s1/0 => cdp en
+- (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
+
+#### show
 - sh ip int br
 - sh fram map
 - sh run int s1/0
 - sh int tr
-- debug arp 		: ARP packet debug on <=> no ...
-- sh arp		: show mac address table
-- sh fram map
-- sh vlan-s		: show vlan-switch
-- sh int trunk		: show interface trunk
-- sh cdp n		: sh cdp (cisco discovery protocol) neighbor
-- sh ip route		: show ip route
-- sh controller s1/0	: check sex of interface ports
-- (serial interface) cdp run => int s1/0 => cdp en
-- (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
-- deb ip pack 		: debugging on 
-- sh fram lmi 		: CCITT => q933a
-- sh ip nat trans	: show ip nat info
-- sh run | begin nat	: show ip nat config
-- debug ppp (options)	: debug on for ppp
-- debug ip rip		: uses broadcast
-- un all		: undebug all
+- `sh vtp status`
 - sh ip protocol	: shows the protocol information
 - sh clock
 - sh ip access		: shows permits and access list 
@@ -190,5 +219,23 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - sh ip prefix		
 - sh route-map
 - `sh spanning vlan 10 brief`
+- sh arp		: show mac address table
+- sh fram map
+- sh vlan-s		: show vlan-switch
+- sh int trunk		: show interface trunk
+- sh cdp n		: sh cdp (cisco discovery protocol) neighbor
+- sh ip route		: show ip route
+- sh controller s1/0	: check sex of interface ports
+- sh fram lmi 		: CCITT => q933a
+- sh ip nat trans	: show ip nat info
+- sh run | begin nat	: show ip nat config
+- sh standby		: show standby vGW
+
+#### debug
+- debug arp 		: ARP packet debug on <=> no ...
+- deb ip pack 		: debugging on 
+- debug ppp (options)	: debug on for ppp
+- debug ip rip		: uses broadcast
+- un all		: undebug all
 - `deb sp event` => kill interface => watch event logs
 - `deb sp bpdu`
