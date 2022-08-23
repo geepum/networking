@@ -185,7 +185,7 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - SW2,3) `show standby` to check standby configs
 - PC1-2) `ip default-g 1.1.234.100` => ping to the vGW => `clear arp` => `clear mac` to erase cached info => `traceroute 1.1.100.100`
 
-### multiple hsrp
+### mhsrp - multiple hot standby routing protocol
 - SW1-4) `vtp m t` => config vlan => `sp portf` for access ports => `sp portf bpduguard` on config mode
 - SW1-3) `int f1/1` => `no sw` to change L2 port to L3 port => config ip address
 - SW2,3) config int vlan 10,20 and ip address
@@ -202,16 +202,44 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - sw1-3) ip add for `sw m a` and `no sw` and svi => next hop test => `router rip` => include `nei (destination router ip add)` => `pass default` => `no pass vlan 10` and `20` and port to SW1
 - SW3) `track 1 int f1/3 line-protocol` => `int vl 10` => `vrrp 10 track 1 decrement 20 `=> `vrrp 10 pri 110` => `vrrp 10 pre d m 30` =>
 
+### etherchannel
+- dsw,asw) vtp setting => vlan setting
+- asw1,2) `sw m a` => `sp portf` => `sp portf b`
+- dsw,asw) use `cdp` to check what are connected => trunking => `channel-group 5 mode on`
+- bb,dsw,asw) ip add
+- bb,dsw) ip routing + router rip
+- dsw) mhsrp
+- pc) `ip default-g (vGW add)` => `ip add (ip add)`
+
+- CentOS server dhcp
+  - `rpm -qa + grep dhcp` => check firewall => turn off dhcp firewall => `ps -ef | grep dnsmasq` to kill dns => `systemctl disable dnsmasq` to disable when rebooting => `vim /etc/dhcp/dhcpd.conf`
+
+```bash
+subnet 192.168.50.0 netmask 255.255.255.0 {
+}
+
+subnet 192.168.10.64 netmask 255.255.255.224 {
+        option routers 192.168.10.92;
+        option domain-name "kedu.edu";
+        option domain-name-servers 192.168.50.101;
+        range dynamic-bootp 192.168.10.65 192.168.10.91;
+        default-lease-time 10000;
+        max-lease-time 50000;
+}
+```
+  - `systemctl start dhcpd.service`
+- dsw1,2) vlan interfaces => `ip help (dhcp server ip add)`
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
+- `clear arp` `clear mac`
 
 #### show
 - sh ip int br
 - sh fram map
 - sh run int s1/0
 - sh int tr
-- `sh vtp status`
 - sh ip protocol	: shows the protocol information
 - sh clock
 - sh ip access		: shows permits and access list 
@@ -229,7 +257,9 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - sh fram lmi 		: CCITT => q933a
 - sh ip nat trans	: show ip nat info
 - sh run | begin nat	: show ip nat config
+- sh vtp status`
 - sh standby		: show standby vGW
+- `sh ether summary` 	: show ether channel summary
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
@@ -239,3 +269,4 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - un all		: undebug all
 - `deb sp event` => kill interface => watch event logs
 - `deb sp bpdu`
+- `deb ip dhcp server events` => `deb dhcp`
