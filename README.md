@@ -206,7 +206,7 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - dsw,asw) vtp setting => vlan setting
 - asw1,2) `sw m a` => `sp portf` => `sp portf b`
 - dsw,asw) use `cdp` to check what are connected => trunking => `channel-group 5 mode on`
-- bb,dsw,asw) ip add
+- bb,dsw,asw) ip add + vGW
 - bb,dsw) ip routing + router rip
 - dsw) mhsrp
 - pc) `ip default-g (vGW add)` => `ip add (ip add)`
@@ -229,11 +229,23 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 ```
   - `systemctl start dhcpd.service`
 - dsw1,2) vlan interfaces => `ip help (dhcp server ip add)`
+- linux
+  - `vim /etc/resolv.conf` => add nameserver ip => `route` to check kernel ip routing table
+
+### 180v
+- SW1-4
+  - vtp => vlan => trunking => check vlans => check trunk => check ether summ
+  - L3 `no sw` => ip add
+- R1-3
+  - fram relay global => clock rate
+  - ip add for SW facing ports
+  - fram relay per router
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
 - `clear arp` `clear mac`
+- for multipoint and main interface cannot ping selves => `fram map ip 14.14.11.1 102` this is to self ping test to check if ports are on or off
 
 #### show
 - sh ip int br
@@ -249,6 +261,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh spanning vlan 10 brief`
 - sh arp		: show mac address table
 - sh fram map
+- sh fram pvc | in DLCI
 - sh vlan-s		: show vlan-switch
 - sh int trunk		: show interface trunk
 - sh cdp n		: sh cdp (cisco discovery protocol) neighbor
