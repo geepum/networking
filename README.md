@@ -67,9 +67,9 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - ping testing
 - router rip
 - route-map
-  - R3) `route-map STATIC` / automatically adds 10 at the end => `match ip address prefix NET1` => `set metric 3` => `route-m STATIC 20` => `match ip add pre NET2` => `set metric 2` => route-m CONNECTED` => `match interface s1/0.123 lo0` => `set metric 1` => `ip prefix-list NET1 permit 16.16.1.0/24` => `ip pre NET2 permit 16.16.2.0/24`
+  - R3) `route-map STATIC` / automatically adds 10 at the end => `match ip address prefix NET1` => `set metric 3` => `route-m STATIC 20` => `match ip add pre NET2` => `set metric 2` => `route-m CONNECTED` => `match interface s1/0.123 lo0` => `set metric 1` => `ip prefix-list NET1 permit 16.16.1.0/24` => `ip pre NET2 permit 16.16.2.0/24`
 - redistribute
-  - R3) `redistribute static route STATIC` => `redistribute connected route CONNECTED`
+  - R3) `router rip` => `redistribute static route STATIC` => `redistribute connected route CONNECTED`
 - ping testing
 
 ### dhcp relay
@@ -241,6 +241,25 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - ip add for SW facing ports
   - fram relay per router
 
+### eigrp + rip
+- fram map => ping test
+  - R1) R1->R2-3
+  - R2) R2->R1,R3
+  - R3) R3->R1-2,R4 
+  - R4) R4->R3
+- eigrp => needs to have neighbor R in the eigrp topology
+  - R1) `net 25.25.1.1 0.0.0.0` == 25.25.1.0 0.0.0.255 => `net 25.25.123.1 0.0.0.0`
+  - R2) `net 25.25.2.2 0.0.0.0` => `net 25.25.123.2 0.0.0.0` => `int s1/0.234` => `no ip sp eigrp 25`
+  - R3) `net 25.25.3.3 0.0.0.0` => `net 25.25.123.3 0.0.0.0`
+- rip
+  - R3) `net 150.1.0.0` => no need for passive since diff subnet
+  - R4) rip config
+- connecting different networks
+  - R3) to bring rip info to eigrp network `router ei 25` => redistribute rip metric bandwidth delay reliability load mtu `r rip m 1544 2000 255 1 1500`
+  - R3) `ip prefix-list HOP1 permit 25.25.123.0/24` => `ip prefix-list HOP2 permit 25.25.2.0/24` => `ip pre HOP3 permit 25.25.1.0/24` => `route-map EIGRP_NET 10` => `match ip add prefix HOP1` => `set metric 1` => `route-map EIGRP_NET 20` => `match ip add prefix HOP2` => `set metric 2` => `route-map EIGRP_NET 30` => `match ip add prefix HOP3` => `set metric 3` => `show route-map`=> `router rip` => `redistribute digrp 25 route-map EIGRP_NET` => `sh ip route` D EX 170 are externals 
+- R3) `int s1/0.34` => `ip summary-address rip 25.25.0.0 255.255.0.0` => R4) `clear ip ro\*` => `sho ip route` to check if routing table has been updated with abstracted addresses
+- R3) `router ei 25` => `distribute-list prefix OVERWRITE out rip` = `ip prefix-list OVERWRITE deny 25.25.0.0/16` => `ip prefix-list OVERWRITE permit 0.0.0.0/0 le 32`
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
@@ -256,7 +275,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - sh clock
 - sh ip access		: shows permits and access list 
 - sh ip nat tr		: shows nat translation
-- sh ip prefix		
+- sh ip prefix		: shows prefix-list per hops
 - sh route-map
 - `sh spanning vlan 10 brief`
 - sh arp		: show mac address table
@@ -273,6 +292,10 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - sh vtp status`
 - sh standby		: show standby vGW
 - `sh ether summary` 	: show ether channel summary
+- `sh route-map`
+- `sh ip rip database`
+- `sh ip protocol`
+- `sh ip eigrp topology summary`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
