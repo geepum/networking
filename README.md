@@ -255,7 +255,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - R3) `net 150.1.0.0` => no need for passive since diff subnet
   - R4) rip config
 - connecting different networks
-  - R3) to bring rip info to eigrp network `router ei 25` => redistribute rip metric bandwidth delay reliability load mtu `r rip m 1544 2000 255 1 1500`
+  - R3) to bring rip info to eigrp network `router ei 25` => redistribute rip metric bandwidth delay/10 reliability load mtu `r rip m 1544 2000 255 1 1500`
   - R3) `ip prefix-list HOP1 permit 25.25.123.0/24` => `ip prefix-list HOP2 permit 25.25.2.0/24` => `ip pre HOP3 permit 25.25.1.0/24` => `route-map EIGRP_NET 10` => `match ip add prefix HOP1` => `set metric 1` => `route-map EIGRP_NET 20` => `match ip add prefix HOP2` => `set metric 2` => `route-map EIGRP_NET 30` => `match ip add prefix HOP3` => `set metric 3` => `show route-map`=> `router rip` => `redistribute digrp 25 route-map EIGRP_NET` => `sh ip route` D EX 170 are externals 
 - R3) `int s1/0.34` => `ip summary-address rip 25.25.0.0 255.255.0.0` => R4) `clear ip ro\*` => `sho ip route` to check if routing table has been updated with abstracted addresses
 - R3) `router ei 25` => `distribute-list prefix OVERWRITE out rip` = `ip prefix-list OVERWRITE deny 25.25.0.0/16` => `ip prefix-list OVERWRITE permit 0.0.0.0/0 le 32`
