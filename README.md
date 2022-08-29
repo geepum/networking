@@ -260,6 +260,29 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - R3) `int s1/0.34` => `ip summary-address rip 25.25.0.0 255.255.0.0` => R4) `clear ip ro\*` => `sho ip route` to check if routing table has been updated with abstracted addresses
 - R3) `router ei 25` => `distribute-list prefix OVERWRITE out rip` = `ip prefix-list OVERWRITE deny 25.25.0.0/16` => `ip prefix-list OVERWRITE permit 0.0.0.0/0 le 32`
 
+#### diffusing update algorithm - dual
+- feasible distance : the best path is the path with the lowest fd value
+- successor : next-hop router on the best path
+- feasible successor : next-hop router on backup path
+- `int s1/0.13` => `delay 2100` => `clear ip eigrp 29 neighbors` => `sh ip eigrp topology detail` to change the successor
+- `router ei 29` => `variance 2` => `sh ip route` to check load balancing
+
+#### access list
+- `line vty 0 4` => `ac 1 permit 29.29.4.0 0.0.0.255` => `access-class 1 in` => `login` => `pass cisco`
+- R4) `ip telnet source-interface f0/0` => `telnet 29.29.123.1`
+- R3) `acc 1 permit 29.29.4.0 0.0.0.255` => `acc 1 deny any` => `int s1/0.34` => `ip access-group 1 in`
+- R3) `no access-list 1` to delete access-list
+- R3) `ip access-list standard R4_net` => `deny 29.29.4.0 0.0.0.255` => `permit any` => `int s1/0.34` => `ip access-group R4_net in`
+- R3) `ip access-list standard R4_net` => `15 deny 29.29.34.4 0.0.0.0` => if router shut down and turned on again, the access list is ordered
+- R3) `ip access-list standard R4_net` => `no 20` => `sh ip access-list` => `telnet 29.29.123.1`
+- R3) `access-list 100 deny icmp any any echo` => `access-list 100 permit ip any any`
+- R3) `int s1/0.34` => `ip access 100 in`
+- echo reply => when ping goes and comes back
+- R3) `sh ip access` => `no access 100` => `ip access exnteded DOS_ATTACK` => `deny icmp any any echo` => `deny icmp any any echo-reply` => `permit ip any any` => `int s1/0.34` => `no ip access 100 in` => `ip access DOS_ATTACK in`
+- R3) `ip access extended R4_NOWEB` => `permit udp any host 29.29.1.100 eq 53` host is 0.0.0.0 => `deny tcp host 29.29.4.4 host 29.29.1.100 eq 80` protocol start dest port-num => `permit ip any any` => `ip access R4_net in`
+- R3) `ip access-list extended R4_noweb` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80 time-range WORK_HOUR` => `time-range WORK_HOUR` => `periodic weekdays 09:00 to 18:00`
+- R3) `clock set 15:40:00 29 august 2022` => 
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
@@ -296,6 +319,9 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip rip database`
 - `sh ip protocol`
 - `sh ip eigrp topology summary`
+- `sh ip eigrp topology detail`
+- `sh ip access-list`
+- `sh ip access-group`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
