@@ -255,7 +255,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - R3) `net 150.1.0.0` => no need for passive since diff subnet
   - R4) rip config
 - connecting different networks
-  - R3) to bring rip info to eigrp network `router ei 25` => redistribute rip metric bandwidth delay/10 reliability load mtu `r rip m 1544 2000 255 1 1500`
+  - R3) to bring rip info to eigrp network `router ei 25` => redistribute rip metric bandwidth delay/10 reliability load mtu `r rip m 1544 2000 255 1 1500` the metric of the entrnace to eigrp network`
   - R3) `ip prefix-list HOP1 permit 25.25.123.0/24` => `ip prefix-list HOP2 permit 25.25.2.0/24` => `ip pre HOP3 permit 25.25.1.0/24` => `route-map EIGRP_NET 10` => `match ip add prefix HOP1` => `set metric 1` => `route-map EIGRP_NET 20` => `match ip add prefix HOP2` => `set metric 2` => `route-map EIGRP_NET 30` => `match ip add prefix HOP3` => `set metric 3` => `show route-map`=> `router rip` => `redistribute digrp 25 route-map EIGRP_NET` => `sh ip route` D EX 170 are externals 
 - R3) `int s1/0.34` => `ip summary-address rip 25.25.0.0 255.255.0.0` => R4) `clear ip ro\*` => `sho ip route` to check if routing table has been updated with abstracted addresses
 - R3) `router ei 25` => `distribute-list prefix OVERWRITE out rip` = `ip prefix-list OVERWRITE deny 25.25.0.0/16` => `ip prefix-list OVERWRITE permit 0.0.0.0/0 le 32`
@@ -267,14 +267,28 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `int s1/0.13` => `delay 2100` => `clear ip eigrp 29 neighbors` => `sh ip eigrp topology detail` to change the successor
 - `router ei 29` => `variance 2` => `sh ip route` to check load balancing
 
-#### access list
-- `line vty 0 4` => `ac 1 permit 29.29.4.0 0.0.0.255` => `access-class 1 in` => `login` => `pass cisco`
-- R4) `ip telnet source-interface f0/0` => `telnet 29.29.123.1`
-- R3) `acc 1 permit 29.29.4.0 0.0.0.255` => `acc 1 deny any` => `int s1/0.34` => `ip access-group 1 in`
-- R3) `no access-list 1` to delete access-list
-- R3) `ip access-list standard R4_net` => `deny 29.29.4.0 0.0.0.255` => `permit any` => `int s1/0.34` => `ip access-group R4_net in`
-- R3) `ip access-list standard R4_net` => `15 deny 29.29.34.4 0.0.0.0` => if router shut down and turned on again, the access list is ordered
-- R3) `ip access-list standard R4_net` => `no 20` => `sh ip access-list` => `telnet 29.29.123.1`
+### access list
+
+#### telnet
+- numbered 1
+  - R1) `access-list 1 permit 29.29.4.0 0.0.0.255` => `line vty 0 4` => `access-class 1 in` => `login` => `pass cisco`
+  - R4) `ip telnet source-interface f0/0` to make source starting point as f0/0, which is where a device would be => `telnet 29.29.123.1`
+  - R3) `telnet 29.29.1231` to check only R4 can telnet to R1
+- numbered 2
+  - R1)`vty 0 4` => `no access-class 1 in` to uncheck the access-class 1
+  - R3) `access-list 1 permit 29.29.44.0 0.0.0.255` => `access 1 deny any` usually this is added as default when adding access-list => `int s1/0.34` => `ip access-group 1 in` to add this group on .34 port to block .44.0 network
+  - R4) `telnet 29.29.123.1` to check f0/0 is still open => `ip telnet source-interface s1/0.34` => `do telnet 29.29.123.1` to check that this port is blocked
+- named 1
+  - R3) `no access 1` to remove the access list => `ip access-list standard R4NET` => `deny 29.29.4.0 0.0.0.255` => `permit any` to deny 4.0 and permit all others => `int s1/0.34` => `ip access-group R4NET in`
+  - R4) `telnet 29.29.123.1` => check this is allowed since telnet source-interface is still within the permitted range => `ip telnet so f0/0` to check this is denied
+- named 2
+  - R3) `sh ip access-lists` to check the access list and to be able to make use of the named access list which is being able to modify the access list - numbered access lists need to be removed and recreated => `ip access-list standard R4NET` => `15 deny 29.29.34.4 0.0.0.0` => `sh ip access-lists` to check the list. If saved and reboot R3, it will reorder the access list => `ip access standard R4NET` => `no 20` => `sh ip access` to check the updated list
+  - R4) `tel net 29.29.123.1` to check that current source-interface is not permitted
+
+#### 
+
+
+
 - R3) `access-list 100 deny icmp any any echo` => `access-list 100 permit ip any any`
 - R3) `int s1/0.34` => `ip access 100 in`
 - echo reply => when ping goes and comes back
@@ -282,6 +296,10 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - R3) `ip access extended R4_NOWEB` => `permit udp any host 29.29.1.100 eq 53` host is 0.0.0.0 => `deny tcp host 29.29.4.4 host 29.29.1.100 eq 80` protocol start dest port-num => `permit ip any any` => `ip access R4_net in`
 - R3) `ip access-list extended R4_noweb` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80 time-range WORK_HOUR` => `time-range WORK_HOUR` => `periodic weekdays 09:00 to 18:00`
 - R3) `clock set 15:40:00 29 august 2022` => 
+
+### access-list extended
+- R3) `ip access-list extended NORMAL_SITE` => `permit udp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 53` => `permit tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80` => `permit tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 20` => add port 21 => => add 22 => `permit ip any any` => `int s1/0.34` => `ip access-group NORMAL_SITE in`
+- R3) `ip access-list extended NORMAL_SITE` => `5 permit udp any any eq 520` => `6 permit ip host 29.29.34.4 host 224.0.0.9` => `no 70` => `70 deny ip any any`
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
