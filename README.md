@@ -131,6 +131,7 @@ R4) ip route 1.1.0.0 255.255.224.0 s1/0.34 1.1.34.3 OR
 - `ping www.google.com`
 
 ### username / password
+- `line c 0` => `login local` => `username master password pass!!` => exit and check 
 - `username master password admin@$` => `line c 0` => `password cisco` => `login local`
 - `username user01 password router@$` => `line vty 0 4` => `login local` => `telnet (ip)`
 - `enable password router@$`
@@ -284,15 +285,27 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - named 2
   - R3) `sh ip access-lists` to check the access list and to be able to make use of the named access list which is being able to modify the access list - numbered access lists need to be removed and recreated => `ip access-list standard R4NET` => `15 deny 29.29.34.4 0.0.0.0` => `sh ip access-lists` to check the list. If saved and reboot R3, it will reorder the access list => `ip access standard R4NET` => `no 20` => `sh ip access` to check the updated list
   - R4) `tel net 29.29.123.1` to check that current source-interface is not permitted
+- numbered access list - dos attack block from outside to inside
+  - R3) access-list 100 deny icmp any any echo` => `access-list 100 permit ip any any` => `int s/0.34` => `ip access 100 in`
+  - R4) `ping 29.29.1.1 repeat 10` to check it's blocked
+- named acess list - dos attack block
+  - R3) `ip access-list extended DOSATTACK` => `deny icmp any any echo` => `deny icmp any any echo-reply` => `permit ip any any` => `int s1/0.34` => `no ip access-group 100 in` => `ip access-group DOSATTACK in`
+  - R4) `ping 29.29.1.1 repeat 10` to check that out to in is blocked => `ping 29.29.4.1` to check in to out is also blocked
+- do it at once
+  - R3) remove all access lists => `access-list 110 permit icmp any any echo` => `access-list 110 permit icmp any any echo-reply` => `int s1/0.34` => `rate-limit input access-group 110 8000 1500 2000 conform-action transmit exceed-action drop`
+  - R4) `ping 29.29.1.1 repeat 100` => to check it's stopped in between
 
-#### 
+### dhcp attack
+- gns
+  - R1) `ip add 1.1.10.254 255.255.255.0`
+  - IOU) `int e0/3` => `duplex full` in principle, it should half duplex, so use this only for this lab => `conf t` => `int range e0/0 , e0/1 , e0/2` => `sh` => `int e0/0` => `no sh` => `sw m a` => `int e0/2` => `sw m a` => `sw port-security` => `sw port-security mac-address => (kali mac address)
+  - IOU) `sh errdisable detect` => `sh interface status errdisable` then you will see e0/2 err-disabled psecure-violation => remove sw port-security config => `sw port` => `sw port max 3` => `sw port violation protect` for warning. other options are restrict and shutdown => `sh errdisable detect`
+  - IOU) `errdisable detect cause security-violation shutdown vlan` => `sh errdisable detect` to check it's disabled => remove the previous command and check if it's back to enable
+  - IOU) `errodisable recovery cause security-violation` => `errdisable recovery internval 30` to shutdown port and no sh the port automatically after 30 sec => `int e0/2` => sh and no sh => `do sh run int e0/2`  
+- kali
+  - `ifconfig eth0 1.1.10.1 netmask 255.255.255.0 broadcast 1.1.10.255` => `service networking restart` => `dhcpx -i eth0 -D 1.1.10.100` to attack  
+  - use stick mac address so that when the machine turned off, addresses are not erased => `sw port mac-address sticky (mac address)`
 
-
-
-- R3) `access-list 100 deny icmp any any echo` => `access-list 100 permit ip any any`
-- R3) `int s1/0.34` => `ip access 100 in`
-- echo reply => when ping goes and comes back
-- R3) `sh ip access` => `no access 100` => `ip access exnteded DOS_ATTACK` => `deny icmp any any echo` => `deny icmp any any echo-reply` => `permit ip any any` => `int s1/0.34` => `no ip access 100 in` => `ip access DOS_ATTACK in`
 - R3) `ip access extended R4_NOWEB` => `permit udp any host 29.29.1.100 eq 53` host is 0.0.0.0 => `deny tcp host 29.29.4.4 host 29.29.1.100 eq 80` protocol start dest port-num => `permit ip any any` => `ip access R4_net in`
 - R3) `ip access-list extended R4_noweb` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80` => `20 deny tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80 time-range WORK_HOUR` => `time-range WORK_HOUR` => `periodic weekdays 09:00 to 18:00`
 - R3) `clock set 15:40:00 29 august 2022` => 
@@ -301,11 +314,33 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - R3) `ip access-list extended NORMAL_SITE` => `permit udp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 53` => `permit tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 80` => `permit tcp 29.29.4.0 0.0.0.255 host 29.29.1.100 eq 20` => add port 21 => => add 22 => `permit ip any any` => `int s1/0.34` => `ip access-group NORMAL_SITE in`
 - R3) `ip access-list extended NORMAL_SITE` => `5 permit udp any any eq 520` => `6 permit ip host 29.29.34.4 host 224.0.0.9` => `no 70` => `70 deny ip any any`
 
+### ospf
+- R1) `router ospf 31` => `router-id 31.31.1.1` => `net 31.31.1.1 0.0.0.0 area 0` => `net 31.31.12.1 0.0.0.0 area 0` number zero is only for backbone
+- do the same for R2, R3, and R4
+- R1) `sh ip ospf neighbor` to check the list => `sh ip ospf int s1/0` to check the network type is non broadcast => `router ospf 31` => `neighbor 31.31.12.2`
+- R2) same config as above with `nei 31.31.23.3`
+- R1) `int s1/0` => `ip ospf hello-interval 20` to change from default value 30 => `clear ip ospf process` to apply the different hello interval, and it will not be neighbored with R2 because of different hello-intervals
+- R1) `int s1/0` => `ip ospf network point-to-point` to reduce time the be neighbored
+- R2) same as above because both routers need to have the same network type as point to point or broadcast
+- R2) `int s1/0.23` => `sh` => `debug ip ospf adj` => `debug ip ospf events`
+- R1-4) `ip ospf net point-to-p` to stop ospf displaying lo0 ip as /32 address
+
+#### exercise
+- ospf config
+- eigrp config
+- R2) `int s1/0.12` => `ip ospf pri 10` => `clear ip ospf pro` to refresh the DR/BDR state, and check that R2 is DR, not R1
+- R2) `redistribute eigrp 31 subnets` to redistribute eigrp to ospf network
+- R2) redistribute ospf to eigrp network => `ip summary-address eigrp 31 31.31.0.0 255.255.240.0`
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
-- `clear arp` `clear mac`
 - for multipoint and main interface cannot ping selves => `fram map ip 14.14.11.1 102` this is to self ping test to check if ports are on or off
+
+#### clear
+- `clear arp`
+- `clear mac`
+- `clear ip ospf process`
 
 #### show
 - sh ip int br
@@ -340,6 +375,9 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip eigrp topology detail`
 - `sh ip access-list`
 - `sh ip access-group`
+- `sh errdisable detect`
+- `sh ip ospf nei`
+- `sh ip ospf int s1/0`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
