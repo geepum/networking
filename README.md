@@ -325,12 +325,33 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - R2) `int s1/0.23` => `sh` => `debug ip ospf adj` => `debug ip ospf events`
 - R1-4) `ip ospf net point-to-p` to stop ospf displaying lo0 ip as /32 address
 
-#### exercise
+#### ospf exercise
 - ospf config
 - eigrp config
 - R2) `int s1/0.12` => `ip ospf pri 10` => `clear ip ospf pro` to refresh the DR/BDR state, and check that R2 is DR, not R1
 - R2) `redistribute eigrp 31 subnets` to redistribute eigrp to ospf network
-- R2) redistribute ospf to eigrp network => `ip summary-address eigrp 31 31.31.0.0 255.255.240.0`
+- R2) redistribute ospf to eigrp network => `int s1/0.23` => `ip summary-address eigrp 31 31.31.0.0 255.255.240.0`
+- blocking overwriting summary address
+  - R2) `ip prefix-list ospfNet deny 31.31.0.0/20` => `ip prefix-list ospfNet permit 0.0.0.0/3 le 32` => `router ospf 31` => `distribute-list prefix ospfNet out eigrp 31`  - R1) `clear ip ro \*` => `sh ip route` to check that 31.31.0.0/20 is now gone
+- another way
+  - R2) `ip prefix-list NET3 permit 31.31.3.0/24` => `ip prefix-list NET4 permit 31.31.4.0/24` => `ip prefix-list NET23 permit 31.31.23.0/24` => `ip prefix-list NET34 permit 31.31.34.0/24` => `ip prefix-list LOOP5 permit permit 5.5.8.0/22` => `route-map eigrpNet` => `match ip add prefix-list NET3 NET4 NET23 NET34 LOOP5` => `router ospf 31` => `redistribute eigrp 31 route-map eigrpNet subnets`
+  - R1) `sh ip route` to check it's not overwritten
+
+#### ospf multiple areas
+- ospf config as per different areas network => neighbor => loopback p-to-p
+- R2) create lo5 with secondary addresses => `redistribute connected route-map LOOP5 subnets` => `route-map LOOP5` => `match int lo5`
+- R3) `sh ip ro` to check LOOP5 network is OE2
+- change from static port to dynamic port
+  - R2) `redi conn subnet route-map LO5 metric-type 1`
+- declare stub
+  - go to ABR => R2) `area 12 stub` => go to stub => R1) `area 12 stub` => `sh ip ro` to check that it only shows directly connected parts
+  - R2) `area 12 stub no-summary` => go to stub => R1) `sh ip ro` to check the summary
+- nssa
+  - R3) `router os 1` => `area 34 nssa default-information-originate`
+  - R4) `router os 1` => `area 34 nssa
+- real nssa
+  - R3) `router os 1` => `area 34 nssa no-summ` + `no-redistribution`  after erasing previous config
+  - R4) `
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
@@ -376,8 +397,10 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip access-list`
 - `sh ip access-group`
 - `sh errdisable detect`
+- `sh ip protocol`
 - `sh ip ospf nei`
 - `sh ip ospf int s1/0`
+- `sh ip ospf database` +  `router` + `network` or `summary` + `asbr-summary` + `external`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
