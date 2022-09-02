@@ -351,7 +351,30 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - R4) `router os 1` => `area 34 nssa
 - real nssa
   - R3) `router os 1` => `area 34 nssa no-summ` + `no-redistribution`  after erasing previous config
-  - R4) `
+
+#### ospf areas exercise
+- vlan config => trunking => ether channeling => ip config => ospf config
+- SW1) `int f1/0` => `ip os pri 0` so that switch doesn't participate in selecting DR device => `int vlan 100` => `ip os pri 10` so that it becomes DR between SW1 and SW3
+- make sure stubs have 0 priority
+- R2-3) `int s1/0.2` => `ip os net point-to-p`
+
+### firewall
+- new vm => install os later => other linux 2.6 x kernel => 10 GB => mem 512 => 6 cores per processors => sound/usb remove => select iso => start vtm
+- enter => start => config multiple network adapters => regular config => ip config per network adapter => yes to additional functionality => yes to erase existing data in the disk => reboot
+- root/netw0rk => windows => IE => https://192.168.10.254:4444
+- interfaces => new interfaces => type ethernet standard => eth2 => 10.5.1.114 => check and refresh => make the status check so that red turns green
+- UTM => `route add default gw eth2 10.0.0.1` 
+- support => tools => 10.0.0.1 check (GW IP)
+- network protection => firewall => sources => new rule => folder img => internal network to source => any to service => any to destination => action allow => save
+- 
+
+- Access-Rule
+ 1. Inside -> Outside : 모든 트래픽 허용
+ 2. Inside -> DMZ : DNS, HTTP, HTTPs, SMTP, POP3, IMAP, FTP
+ 3. DMZ -> Inside : 없음(모든 트래픽 차단)
+ 4. DMZ -> Outside : DNS, SMTP
+ 5. Outside -> Inside : 없음(모든 트래픽 차단)
+ 6. Outside -> DMZ : DNS, HTTP, HTTPs, SMTP, FTP
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
