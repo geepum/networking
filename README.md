@@ -361,20 +361,34 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 ### firewall
 - new vm => install os later => other linux 2.6 x kernel => 10 GB => mem 512 => 6 cores per processors => sound/usb remove => select iso => start vtm
 - enter => start => config multiple network adapters => regular config => ip config per network adapter => yes to additional functionality => yes to erase existing data in the disk => reboot
-- root/netw0rk => windows => IE => https://192.168.10.254:4444
+- root/netw0rk => root/password => windows => IE => https://192.168.10.254:4444
 - interfaces => new interfaces => type ethernet standard => eth2 => 10.5.1.114 => check and refresh => make the status check so that red turns green
-- UTM => `route add default gw eth2 10.0.0.1` 
+- UTM => `route add default gw 10.0.0.1` 
 - support => tools => 10.0.0.1 check (GW IP)
 - network protection => firewall => sources => new rule => folder img => internal network to source => any to service => any to destination => action allow => save
-- 
+- nat
+  - rule type dnat (destination) => traffic from any => using service dns => going toexternal add => action change the destination to => add network definition => name dns-svr => type host => ipv4 192.168.20.200 => save
+  - new nat rule => matching condition => using service http => gonig to external (add) => action => change the detination to => add network definition => name web-svr => type host => 192.168.20.200 => save
+  - green button => refresh
+  - web protection => web filtering => block url
 
-- Access-Rule
+
+- o Access-Rule
  1. Inside -> Outside : 모든 트래픽 허용
  2. Inside -> DMZ : DNS, HTTP, HTTPs, SMTP, POP3, IMAP, FTP
  3. DMZ -> Inside : 없음(모든 트래픽 차단)
  4. DMZ -> Outside : DNS, SMTP
  5. Outside -> Inside : 없음(모든 트래픽 차단)
  6. Outside -> DMZ : DNS, HTTP, HTTPs, SMTP, FTP
+
+### ospf project + mail server
+- vtp => vlan => trunking => ip config => next hop test
+- isp) `ip access-list standard standard KEDU` => `permit host 1.1.100.2` => `permit 2.2.70.0 0.0.0.255` => `ip nat in so list KEDU int f1/0 over` => `int f0/0` => `ip nat in` => `int f0/1` => `ip nat in` => `int f1/0` => `ip nat out` => `ip route 2.2.70.0 255.255.255.0 f0/1 1.1.100.6` => `ip route 1.1.200.0 255.255.255.0 f0/0 1.1.100.2` => `ip route 0.0.0.0 0.0.0.0 f1/0 10.0.0.1`
+- dmz) `ip route 0.0.0.0 0.0.0.0 f1/15 1.1.100.5`
+- ce) `ip access standard KEDUNET` => `permit 192.168.10.0 0.0.0.255` => `permit 192.168.60.0 0.0.0.255` => `exit` => `ip nat so li KEDUNET int f1/0 over` => `ip nat in` and `out` => `ip nat in so static 192.168.50.101` => `ip nat in so static 192.168.50.102 1.1.200.2` => `ip route 192.168.60.0 255.255.255.0 s2/0 211.104.54.2` => `ip route 0.0.0.0 0.0.0.0 f1/0 1.1.100.1`
+- hqced) `ip route 0.0.0.0 0.0.0.0 s1/0 211.104.54.1`
+- ce) `default-information originate always`  
+
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
