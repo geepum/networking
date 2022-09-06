@@ -388,7 +388,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - ce) `ip access standard KEDUNET` => `permit 192.168.10.0 0.0.0.255` => `permit 192.168.60.0 0.0.0.255` => `exit` => `ip nat so li KEDUNET int f1/0 over` => `ip nat in` and `out` => `ip nat in so static 192.168.50.101` => `ip nat in so static 192.168.50.102 1.1.200.2` => `ip route 192.168.60.0 255.255.255.0 s2/0 211.104.54.2` => `ip route 0.0.0.0 0.0.0.0 f1/0 1.1.100.1`
 - hqced) `ip route 0.0.0.0 0.0.0.0 s1/0 211.104.54.1`
 - ce) `default-information originate always`  
-
+- 
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
