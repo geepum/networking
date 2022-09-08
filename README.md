@@ -358,6 +358,9 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - make sure stubs have 0 priority
 - R2-3) `int s1/0.2` => `ip os net point-to-p`
 
+- 
+  - `router os 1` 
+  - `auto-cost reference-bandwidth 1000` which is 10^9 to make sure that the calculation is not just based on default value of 10^8 which may not result in natural numbers but fraction numbers
 ### firewall
 - new vm => install os later => other linux 2.6 x kernel => 10 GB => mem 512 => 6 cores per processors => sound/usb remove => select iso => start vtm
 - enter => start => config multiple network adapters => regular config => ip config per network adapter => yes to additional functionality => yes to erase existing data in the disk => reboot
@@ -391,7 +394,12 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 
 ### aaa server
 - dsw1) `ip domain-name kedu-edu` => `crypto key generate rsa` => `768` => `ip ssh version 2` => `username admin password password` => `line vty 0 4` => `transport input ssh` => `enable secret password` => `username admin15 privilege 15 password cisco123` => `ip http server` => `ip http authentication local` => `ip http secure-server` => `aaa new-model` => `tacacs host 192.168.50.103 single-conection key cisco123` => `aaa authentication login default group tacacs local`
-- dsw1) `aaa authen login VTY_ACC group tacacs local` => `line vty 0 4` => `login authen VTY_ACC`
+- authentication
+  - dsw1) `aaa authen login VTY_ACC group tacacs local` => `line vty 0 4` => `login authen VTY_ACC`
+- authorization
+  - dsw1) `aaa author commands 5 VTY_PRI group tacas local` => `aaa author commands 15 VTY_PRI group tacacs local`
+- accounting
+  - dsw1) `aaa accounting exec ACC start-stop group tacacs` => `aaa account commands 15 ACC start-stop group tacacs` => `line vty 0 4` => `accounting exec ACC` => `accounting commands 15 ACC
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
