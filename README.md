@@ -361,6 +361,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - 
   - `router os 1` 
   - `auto-cost reference-bandwidth 1000` which is 10^9 to make sure that the calculation is not just based on default value of 10^8 which may not result in natural numbers but fraction numbers
+
 ### firewall
 - new vm => install os later => other linux 2.6 x kernel => 10 GB => mem 512 => 6 cores per processors => sound/usb remove => select iso => start vtm
 - enter => start => config multiple network adapters => regular config => ip config per network adapter => yes to additional functionality => yes to erase existing data in the disk => reboot
@@ -400,6 +401,9 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - dsw1) `aaa author commands 5 VTY_PRI group tacas local` => `aaa author commands 15 VTY_PRI group tacacs local`
 - accounting
   - dsw1) `aaa accounting exec ACC start-stop group tacacs` => `aaa account commands 15 ACC start-stop group tacacs` => `line vty 0 4` => `accounting exec ACC` => `accounting commands 15 ACC
+
+### port forwarding
+- `ip route 0.0.0.0 0.0.0.0 50.50.50.2` => `ip access standard name` => `permit 192.168.1.0 0.0.0.255` => `ip nat in so stat tcp 192.168.1.10 80 50.50.50.1 80`
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
