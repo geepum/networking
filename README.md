@@ -405,6 +405,19 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 ### port forwarding
 - `ip route 0.0.0.0 0.0.0.0 50.50.50.2` => `ip access standard name` => `permit 192.168.1.0 0.0.0.255` => `ip nat in so stat tcp 192.168.1.10 80 50.50.50.1 80`
 
+### firewall
+-`ip access-list INGRESS` => `permit udp any host 100.1.1.250 eq 53` => `permit tcp any host 100.1.1.250 eq 80` => `deny ip any any` => `int f0/1` => `ip access-group INGRESS in` => `21 permit ospf host 1.1.100.6 any` => `sh ip access` => `22 permit tcp any 100.1.1.0 0.0.0.255 established`
+- wireshark capture => `ip.addr == 100.1.1.1 && tcp.port == 23` => win701 telnet 1.1.100.6 port23 => check wireshark
+- racl - reflexive acl
+  - remove existing access config => `ip access ex RACL->OUT` => `permit tcp any any reflect RACL_T` => `permit udp any any reflect RACL_T` => `permit icmp any any reflect RACL_T` => `permit ip any any` => `ip access ex RACL->IN` => `permit ospf host 1.1.100.6 any` => `permit udp any host 100.1.1.250 eq 53` => `permit tcp any host 100.1.1.250 eq 80` => `evaluate RACL_T` => `int f0/1` => `ip access RACL->OUT out` => `ip access RACL->IN in` => try to connect to web then check ip access `do sh ip access` to see numerous lists of permits created automatically
+- dacl - dynamic acl
+  - `ip access ex RACL->IN` => `41 permit tcp any host 1.1.100.5 eq 23` => `42 dynamic applythis permit tcp any host 1.1.100.1 eq 23` => `line vty 0 4` => `login local` => `autocommand access-enable host timeout 10` => `username reuser pass cisco123` => win702 telnet port23 1.1.100.5
+- cbac - context based access control
+  - `ip inspect name CBAC_T tcp` + `udp` + `icmp` => `ip access ex OUT->IN` => `permit ospf host 1.1.100.6 any` => `permit udp any host 100.1.1.250 eq 53` => `permit tcp any host 100.1.1.250 eq 80` => `permit ip any any`
+  - `int f0/1` => `ip access OUT->IN in` => `ip insepct CBAC_T out`
+- url filter
+  - `ip urlfilter exclusive-domain deny .naver.com` => `ip urlfilter allow-mode on` => `ip urlfilter audit-trail` => `ip inspect name CBAC http urlfilter` + `https`
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
