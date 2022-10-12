@@ -417,6 +417,14 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
   - `int f0/1` => `ip access OUT->IN in` => `ip insepct CBAC_T out`
 - url filter
   - `ip urlfilter exclusive-domain deny .naver.com` => `ip urlfilter allow-mode on` => `ip urlfilter audit-trail` => `ip inspect name CBAC http urlfilter` + `https`
+- firewall zone
+  - `zone security Inside` => `zone security DMZ` => `zone security Outside` => `int f0/0` => `zone-member security Inside` => `int f2/0` => `zone-member security Inside` and do it for all the other ports => 
+
+### asa firewall
+- `show firewall` to check it's a router mode  => `firewall transparent` to change it to l2 mode => `no firewall transparent` to change back to l3
+- `show route` to check routing table => `show nameif` to check interface names
+- `hostname ASA` => `enable password cisco123` => `int g 0` => `desc ##Inside_Network##` => `ip add 200.1.1.254 255.255.255.0` => `nameif Inside` => `security-level 100` => `int g 1` => `desc ##Outside_Network##` => `ip add 1.1.100.1 255.255.255.252` => `nameif Outside` => `security-level 0` => `no sh` => `int g 2` => `desc ##DMZ\_Network##` => `ip add 100.1.1.254 255.255.255.0` => `name if DMZ` => `security-level 50` => `no sh`
+- `route Inside 200.2.2.0 255.255.255.0 200.1.1.2` => `route Outside 0 0 1.1.100.2
 
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
@@ -466,6 +474,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip ospf nei`
 - `sh ip ospf int s1/0`
 - `sh ip ospf database` +  `router` + `network` or `summary` + `asbr-summary` + `external`
+- `sh zone security`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
