@@ -475,6 +475,7 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip ospf int s1/0`
 - `sh ip ospf database` +  `router` + `network` or `summary` + `asbr-summary` + `external`
 - `sh zone security`
+- `sh crypto isakmp sa`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
