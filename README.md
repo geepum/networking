@@ -426,6 +426,28 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `hostname ASA` => `enable password cisco123` => `int g 0` => `desc ##Inside_Network##` => `ip add 200.1.1.254 255.255.255.0` => `nameif Inside` => `security-level 100` => `int g 1` => `desc ##Outside_Network##` => `ip add 1.1.100.1 255.255.255.252` => `nameif Outside` => `security-level 0` => `no sh` => `int g 2` => `desc ##DMZ\_Network##` => `ip add 100.1.1.254 255.255.255.0` => `name if DMZ` => `security-level 50` => `no sh`
 - `route Inside 200.2.2.0 255.255.255.0 200.1.1.2` => `route Outside 0 0 1.1.100.2
 
+### ipsec
+- `crypto isakmp policy 1` => `authen pre` => `enc aes` => `hash sha` => `group 2` => `lifetime 7200`
+- `crypto isakmp key cisco123 address 1.1.100.6`
+- `crypto isakmp key cisco123 address 1.1.100.10`
+- `crypto ipsec transform-set IPSEC_SA esp-aes esp-sha-hmac` => `mode tunnel`
+- `ip access e HQ>B1` => `permit gre host 1.1.100.1 host 1.1.100.6`
+- `ip access e HQ>B2` => `permit gre host 1.1.100.1 host 1.1.100.10`
+- `crypto map VPN_T 1 ipsec-isakmp` => `match address HQ>B1` => `set transform-set IPSEC_SA` => `set peer 1.1.100.6`
+- `crypto map VPN_T 2 ipsec-isakmp` => `match address HQ>B2` => `set transform-set IPSEC_SA` => `set peer 1.1.100.10`
+- `int f0/0` => `crypto map VPN_T`
+
+### gre tunnel
+- ip add => gre tunneling  `int tunnel 1` => `ip add 10.10.10.1 255.255.255.252` => `tunnel source 1.1.100.1` => `tunnel destination 1.1.100.6` => `tunnel mode gre ip`
+- ip route => ospf config => ping test
+
+### grep tunnel multipoint nhrp
+- ip add => gre tunneling `int tunnel 0` => `ip add 10.10.10.1 255.255.255.0` => `tunnel source f0/0` => `tunnel mode grep multipoint` => `tunnel key 1` => `ip nhrp network-id 1` => `ip nhrp holdtime 600` => `ip nhrp map multicast dynamic`
+- branch ip `int tun 0` => `tun so 1.1.100.6` => `tun m grep m` => `tun key 1` => `ip nhrp network-id 1` => `ip nhrp nhs 10.10.10.1` => `ip nhrp map 10.10.10.1 1.1.100.1` => `ip nhrp map multicast 1.1.100.1` => `ip nhrp registration timeout 60` 
+- ip route => ping test => eigrp
+- HQVPN `int tun 0` => `no ip split ei 1`
+- for ospf, change hqvpn config `int tun 0` => `ip os net point-to-multi` => `ip os hello 10` => branches `int tun 0` => `ip os pri 0`
+
 ### Debugging
 - (serial interface) cdp run => int s1/0 => cdp en
 - (in case of mis config of int) => no... => no ip add => sh => exit => no int s1/0.23 => int s1/0.233
@@ -476,6 +498,8 @@ subnet 192.168.10.64 netmask 255.255.255.224 {
 - `sh ip ospf database` +  `router` + `network` or `summary` + `asbr-summary` + `external`
 - `sh zone security`
 - `sh crypto isakmp sa`
+- `sh ip nhrp tunnel 0`
+- `sh ip nhrp`
 
 #### debug
 - debug arp 		: ARP packet debug on <=> no ...
